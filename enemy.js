@@ -4,10 +4,10 @@ class Enemy {
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.size = 30; // slightly smaller than players
+    this.size = 45; // slightly smaller than players
     this.speed = 0.5; // Acceleration per frame (slower than player)
     this.friction = 0.8; // Damping
-    this.health = 3; // Takes 3 hits
+    this.health = 3; this.frame = 0; this.frameTimer = 0; this.frame = 0; this.frameTimer = 0; this.frame = 0; this.frameTimer = 0; // Takes 3 hits
   }
 
   chase(p1, p2) {
@@ -47,16 +47,17 @@ class Enemy {
   display() {
     push();
     // Blob appearance (purple body, distinct from players)
-    fill(130, 0, 150);
-    stroke(255);
-    strokeWeight(1);
-    ellipse(this.x, this.y, this.size, this.size);
-    
-    // Angry eyes
-    fill(255, 50, 50);
-    noStroke();
-    ellipse(this.x - 5, this.y - 3, 6, 6);
-    ellipse(this.x + 5, this.y - 3, 6, 6);
+    // Render enemy sprite
+    let fw = imgEnemy.height;
+    let maxFrames = imgEnemy.width / fw;
+    this.frameTimer++;
+    if (this.frameTimer > 5) {
+      this.frame = (this.frame + 1) % maxFrames;
+      this.frameTimer = 0;
+    }
+    imageMode(CENTER);
+    image(imgEnemy, this.x, this.y, this.size * 2, this.size * 2, this.frame * fw, 0, fw, fw);
+
     pop();
   }
 }

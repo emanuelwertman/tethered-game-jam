@@ -1,12 +1,21 @@
+
+let imgGreenSlime, imgPinkSlime, imgEnemy, imgChain, imgFloor;
+
+function preload() {
+  imgGreenSlime = loadImage('assets/green_slime.png');
+  imgPinkSlime = loadImage('assets/pink_slime.png');
+  imgEnemy = loadImage('assets/enemy.png');
+  imgChain = loadImage('assets/chain.png');
+  imgFloor = loadImage('assets/floor.png');
+}
 let player1;
 let player2;
 let enemies = [];
-let projectiles = [];
 let sharedEnergy = 100;
 let maxSharedEnergy = 100;
 
 // Constant for maximum chain distance
-const TETHER_MAX_DIST = 200;
+const TETHER_MAX_DIST = 300;
 
 function setup() {
   // Create a canvas the size of the screen
@@ -14,9 +23,9 @@ function setup() {
   
   // Initialize players
   // left side, red
-  player1 = new Player(width / 4, height / 2, color(255, 100, 100)); 
+  player1 = new Player(width / 4, height / 2, imgPinkSlime); 
   // right side, blue
-  player2 = new Player((width / 4) * 3, height / 2, color(100, 100, 255)); 
+  player2 = new Player((width / 4) * 3, height / 2, imgGreenSlime); 
   
   // Initialize placeholder enemies
   for (let i = 0; i < 5; i++) {
@@ -29,7 +38,13 @@ function setup() {
 
 function draw() {
   // Background acts as our "map" for now (green grass color)
-  background(50, 150, 80);
+  // Draw floor
+  for (let x = 0; x < width; x += imgFloor.width) {
+    for (let y = 0; y < height; y += imgFloor.height) {
+      imageMode(CORNER);
+      image(imgFloor, x, y);
+    }
+  }
   
   // Handle movement
   // Player 1 controls: W(87), S(83), A(65), D(68)
@@ -45,35 +60,24 @@ function draw() {
   player1.update();
   player2.update();
 
-  // Players auto-shoot at enemies
-  player1.autoShoot(enemies);
-  player2.autoShoot(enemies);
-
   // Draw the chain holding them together
   stroke(150); // Gray color
   strokeWeight(6);
   line(player1.x, player1.y, player2.x, player2.y);
   
-  // Update and display projectiles
-  for (let i = projectiles.length - 1; i >= 0; i--) {
-    let p = projectiles[i];
-    p.update();
-    p.display();
+  // Helper to calculate distance from point to segment
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    let lengthSq = dx * dx + dy * dy;
+    if (lengthSq === 0) return dist(px, py, x1, y1);
     
-    // Check collisions with enemies
-    for (let j = enemies.length - 1; j >= 0; j--) {
-      let e = enemies[j];
-      let d = dist(p.x, p.y, e.x, e.y);
-      if (d < (p.size / 2 + e.size / 2)) {
-        e.health -= 1;
-        p.markedForDeletion = true;
-        break;
-      }
-    }
+    let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+    t = Math.max(0, Math.min(1, t));
     
-    if (p.markedForDeletion) {
-      projectiles.splice(i, 1);
-    }
+    let projX = x1 + t * dx;
+    let projY = y1 + t * dy;
+    return dist(px, py, projX, projY);
   }
 
   // Update and display enemies
@@ -86,6 +90,12 @@ function draw() {
     enemy.chase(player1, player2);
     enemy.update();
     enemy.display();
+    
+    // Check if enemy hits the chain
+    let dToChain = distToSegment(enemy.x, enemy.y, player1.x, player1.y, player2.x, player2.y);
+    if (dToChain < enemy.size / 2 + 3) { // 3 is roughly half the chain stroke weight
+      enemy.health -= 1; // Or set to 0 for instant kill
+    }
   }
 
   // Display players
@@ -236,5 +246,5 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-// Classes have been moved to separate files: player.js, enemy.js, projectile.js
+// Classes have been moved to separate files: player.js, enemy.js
 

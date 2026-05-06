@@ -4,50 +4,15 @@ class Player {
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.size = 40;
+    this.size = 60;
     this.speed = 1.5; // Acceleration per frame
     this.friction = 0.8; // Damping
-    this.color = playerColor;
+    this.img = playerColor; this.color = color(255); this.frame = 0; this.frameTimer = 0;
     this.health = 100;
     this.maxHealth = 100;
-    this.shootTimer = 0;
-    this.fireRate = 30; // frames between shots
     this.invulnTimer = 0;
   }
   
-  autoShoot(enemies) {
-    this.shootTimer--;
-    if (this.shootTimer <= 0 && enemies.length > 0) {
-      // Find nearest enemy
-      let nearestDist = Infinity;
-      let nearestEnemy = null;
-      for (let enemy of enemies) {
-        if (enemy.health <= 0) continue; // Don't shoot dead enemies
-        let d = dist(this.x, this.y, enemy.x, enemy.y);
-        if (d < nearestDist) {
-          nearestDist = d;
-          nearestEnemy = enemy;
-        }
-      }
-      
-      if (nearestEnemy) {
-        // Calculate direction to enemy
-        let dx = nearestEnemy.x - this.x;
-        let dy = nearestEnemy.y - this.y;
-        let distance = sqrt(dx * dx + dy * dy);
-        
-        if (distance > 0) {
-          let projectileSpeed = 8;
-          let vx = (dx / distance) * projectileSpeed;
-          let vy = (dy / distance) * projectileSpeed;
-          
-          projectiles.push(new Projectile(this.x, this.y, vx, vy, this.color));
-          this.shootTimer = this.fireRate;
-        }
-      }
-    }
-  }
-
   handleInput(upKey, downKey, leftKey, rightKey) {
     if (keyIsDown(upKey)) {
       this.vy -= this.speed;
@@ -86,17 +51,22 @@ class Player {
     if (this.invulnTimer > 0 && frameCount % 10 < 5) {
       fill(255); // Flash white when hit
     } else {
-      fill(this.color);
+      fill(255); // not used
     }
     stroke(255);
     strokeWeight(2);
     // Draw placeholder sprite (a circle)
-    ellipse(this.x, this.y, this.size, this.size);
-    
-    // Draw a little "nose" so we know which way it could face
-    fill(0);
-    noStroke();
-    ellipse(this.x, this.y - this.size/4, this.size/4);
+    // Sprite rendering
+    let fw = this.img.height; // assuming square frames based on height
+    let maxFrames = this.img.width / fw;
+    this.frameTimer++;
+    if (this.frameTimer > 5) {
+      this.frame = (this.frame + 1) % maxFrames;
+      this.frameTimer = 0;
+    }
+    imageMode(CENTER);
+    image(this.img, this.x, this.y, this.size * 2, this.size * 2, this.frame * fw, 0, fw, fw);
+
     pop();
   }
 }
