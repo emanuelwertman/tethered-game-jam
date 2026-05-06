@@ -8,7 +8,7 @@ class Player {
     this.speed = 1.5; // Acceleration per frame
     this.friction = 0.8; // Damping
     this.img = playerColor; this.color = color(255); this.frame = 0; this.frameTimer = 0;
-    this.health = 100;
+    this.health = 300;
     this.maxHealth = 100;
     this.invulnTimer = 0;
   }
@@ -59,11 +59,17 @@ class Player {
     // Sprite rendering
     let fw = this.img.height; // assuming square frames based on height
     let maxFrames = this.img.width / fw;
-    this.frameTimer++;
-    if (this.frameTimer > 5) {
-      this.frame = (this.frame + 1) % maxFrames;
-      this.frameTimer = 0;
+    
+    if (this.invulnTimer > 0) {
+      this.frame = maxFrames - 1; // Last frame is damage animation
+    } else {
+      this.frameTimer++;
+      if (this.frameTimer > 5) {
+        this.frame = (this.frame + 1) % (maxFrames - 1);
+        this.frameTimer = 0;
+      }
     }
+    
     imageMode(CENTER);
     image(this.img, this.x, this.y, this.size * 2, this.size * 2, this.frame * fw, 0, fw, fw);
 
