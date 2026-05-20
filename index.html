@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>p5.js Game Template</title>
-    <!-- Load p5.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <meta name="description" content="Bungee Slimes - A cooperative 2-player game where slimes work together to defeat enemies">
+    <title>Tethered</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrollbars so canvas fills the screen */
-            background-color: #222;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            overflow: hidden;
+            background: #0a0a12;
+            font-family: 'Outfit', sans-serif;
         }
-        canvas {
-            display: block;
-        }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <script src="player.js"></script>
-    <script src="enemy.js"></script>
-    <script src="sketch.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
