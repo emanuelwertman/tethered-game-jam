@@ -5,6 +5,7 @@ let playerMaxHP = 100, attackCooldown = 18;
 let spawnTimer=0, spawnInterval=90, gameState='title';
 let upgradesAvailable = [], selectedUpgradeIndex = 0;
 let shakeAmt=0, flashAlpha=0;
+let unlockMessage="", unlockTimer=0;
 let boostP1=false, boostP2=false, boostTimer=0, speedBoostActive=0;
 let anchorMode=false, anchorPlayer=-1, spinAngle=0, spinSpeed=0.08, anchorCooldown=0;
 let camX=0, camY=0, worldScale=1.0;
@@ -47,6 +48,7 @@ function resetGame(){
   energy=100; wave=1; score=0; killCount=0;
   spawnTimer=0; spawnInterval=90;
   speedBoostActive=0; anchorMode=false; anchorCooldown=0;
+  unlockMessage=""; unlockTimer=0;
   boostP1=false; boostP2=false;
   gwActive=false; gwTimer=0; gwP1=0; gwP2=0;
   shieldCooldown=0;
@@ -71,21 +73,21 @@ function keyPressed(){
     return;
   }
   if(gameState!=='play') return;
-  // Speed boost: E for P1, O for P2 (Wave 1)
-  if(key.toLowerCase()==='e' && wave>=1) boostP1=12;
-  if(key.toLowerCase()==='o' && wave>=1) boostP2=12;
-  // Shield Pulse: Shift (Wave 2)
-  if(keyCode===SHIFT && wave>=2 && shieldCooldown<=0 && energy>=20){
+  // Speed boost: E for P1, O for P2
+  if(key.toLowerCase()==='e' && wave>=2) boostP1=12;
+  if(key.toLowerCase()==='o' && wave>=2) boostP2=12;
+  // Shield Pulse: Shift
+  if(keyCode===SHIFT && wave>=4 && shieldCooldown<=0 && energy>=20){
     triggerShieldPulse();
   }
-  // Gravity Well: R for P1, P for P2 (Wave 3)
-  if(key.toLowerCase()==='r' && wave>=3) gwP1=12;
-  if(key.toLowerCase()==='p' && wave>=3) gwP2=12;
-  // Bungee Slam: X for P1, . for P2 (Wave 4)
-  if(key.toLowerCase()==='x' && wave>=4) slamP1=12;
-  if(key==='.' && wave>=4) slamP2=12;
-  // Anchor-spin: spacebar (Wave 5)
-  if(key===' ' && wave>=5 && energy>=50 && !anchorMode && anchorCooldown<=0){
+  // Gravity Well: R for P1, P for P2
+  if(key.toLowerCase()==='r' && wave>=6) gwP1=12;
+  if(key.toLowerCase()==='p' && wave>=6) gwP2=12;
+  // Bungee Slam: X for P1, . for P2
+  if(key.toLowerCase()==='x' && wave>=8) slamP1=12;
+  if(key==='.' && wave>=8) slamP2=12;
+  // Anchor-spin: spacebar
+  if(key===' ' && wave>=10 && energy>=50 && !anchorMode && anchorCooldown<=0){
     anchorMode=true;
     let v0=mag(players[0].vx,players[0].vy), v1=mag(players[1].vx,players[1].vy);
     anchorPlayer=v0<=v1?0:1;
@@ -155,6 +157,8 @@ function updateGame(){
     shakeAmt=10; flashAlpha=60;
     for(let p of players) for(let i=0;i<15;i++) particles.push(mkPart(p.x,p.y,[255,120,60],3));
   }
+
+  if(unlockTimer>0) unlockTimer--;
 
   // Anchor-spin
   if(anchorMode && keys[' ']){
@@ -543,7 +547,14 @@ function killEnemy(i){
 
 function spawnWave(){
   spawnTimer=0;
-  let count=4+wave*2;
+  
+  if(wave===2) { unlockMessage="Speed Boost Unlocked! (E / O)"; unlockTimer=180; }
+  else if(wave===4) { unlockMessage="Shield Pulse Unlocked! (Shift)"; unlockTimer=180; }
+  else if(wave===6) { unlockMessage="Gravity Well Unlocked! (R / P)"; unlockTimer=180; }
+  else if(wave===8) { unlockMessage="Bungee Slam Unlocked! (X / .)"; unlockTimer=180; }
+  else if(wave===10) { unlockMessage="Anchor Spin Unlocked! (Space)"; unlockTimer=180; }
+
+  let count=3+Math.floor(wave*1.5);
   for(let i=0;i<count;i++){
     let side=floor(random(4));
     let sx,sy;
@@ -552,14 +563,22 @@ function spawnWave(){
     else if(side===2){sx=-30;sy=random(ARENA_H);}
     else{sx=ARENA_W+30;sy=random(ARENA_H);}
     // Pick tier based on wave
-    let r=random();
-    let tier=0;
-    if(wave>=5 && r<0.08) tier=5;       // Tank
-    else if(wave>=4 && r<0.18) tier=4;   // Splitter
-    else if(wave>=3 && r<0.26) tier=3;   // Dasher
-    else if(wave>=2 && r<0.36) tier=6;   // Sprite Elite
-    else if(wave>=2 && r<0.48) tier=2;   // Shooter
-    else if(r<0.15+wave*0.02) tier=1;    // Brute
+    let r = random();
+    let tier = 0;
+    
+    let p_tank  = wave >= 10 ? 0.05 : 0;
+    let p_split = wave >= 8  ? p_tank  + 0.10 : p_tank;
+    let p_elite = wave >= 6  ? p_split + 0.10 : p_split;
+    let p_dash  = wave >= 4  ? p_elite + 0.10 : p_elite;
+    let p_shoot = wave >= 3  ? p_dash  + 0.15 : p_dash;
+    let p_brute = wave >= 2  ? p_shoot + 0.20 : p_shoot;
+
+    if(r < p_tank) tier = 5;
+    else if(r < p_split) tier = 4;
+    else if(r < p_elite) tier = 6;
+    else if(r < p_dash) tier = 3;
+    else if(r < p_shoot) tier = 2;
+    else if(r < p_brute) tier = 1;
 
     let def=mkEnemyDef(tier);
     enemies.push({
@@ -1012,11 +1031,11 @@ function drawHUD(){
 
   // --- Bottom-center: Ability bar ---
   let abilities = [
-    { name: 'SPEED', icon: '⚡', keys: 'E+O', cost: 15, active: speedBoostActive > 0, cd: 0, maxCd: 1, ready: energy >= 15, unlockWave: 1, color: [255, 255, 100] },
-    { name: 'SHIELD', icon: '🛡️', keys: 'SHIFT', cost: 20, active: false, cd: shieldCooldown, maxCd: 90, ready: energy >= 20 && shieldCooldown <= 0, unlockWave: 2, color: [100, 200, 255] },
-    { name: 'VORTEX', icon: '🔮', keys: 'R+P', cost: 25, active: gwActive, cd: 0, maxCd: 1, ready: energy >= 25 && !gwActive, unlockWave: 3, color: [160, 100, 255] },
-    { name: 'SLAM', icon: '💥', keys: 'X+.', cost: 35, active: slamActive, cd: 0, maxCd: 1, ready: energy >= 35 && !slamActive, unlockWave: 4, color: [255, 120, 60] },
-    { name: 'ANCHOR', icon: '🌀', keys: 'SPACE', cost: 50, active: anchorMode, cd: anchorCooldown, maxCd: 45, ready: energy >= 50 && anchorCooldown <= 0, unlockWave: 5, color: [100, 200, 255] }
+    { name: 'SPEED', icon: '⚡', keys: 'E+O', cost: 15, active: speedBoostActive > 0, cd: 0, maxCd: 1, ready: energy >= 15, unlockWave: 2, color: [255, 255, 100] },
+    { name: 'SHIELD', icon: '🛡️', keys: 'SHIFT', cost: 20, active: false, cd: shieldCooldown, maxCd: 90, ready: energy >= 20 && shieldCooldown <= 0, unlockWave: 4, color: [100, 200, 255] },
+    { name: 'VORTEX', icon: '🔮', keys: 'R+P', cost: 25, active: gwActive, cd: 0, maxCd: 1, ready: energy >= 25 && !gwActive, unlockWave: 6, color: [160, 100, 255] },
+    { name: 'SLAM', icon: '💥', keys: 'X+.', cost: 35, active: slamActive, cd: 0, maxCd: 1, ready: energy >= 35 && !slamActive, unlockWave: 8, color: [255, 120, 60] },
+    { name: 'ANCHOR', icon: '🌀', keys: 'SPACE', cost: 50, active: anchorMode, cd: anchorCooldown, maxCd: 45, ready: energy >= 50 && anchorCooldown <= 0, unlockWave: 10, color: [100, 200, 255] }
   ];
   let aw = 115, ah = 105, gap = 16;
   let totalW = abilities.length * aw + (abilities.length - 1) * gap;
@@ -1096,6 +1115,19 @@ function drawHUD(){
   if (slamActive) {
     fill(255, 120, 60, 230);
     text('💥 BUNGEE SLAM 💥', width / 2, bannerY);
+    bannerY += 25;
+  }
+  
+  if (unlockTimer > 0) {
+    let alpha = map(unlockTimer, 0, 180, 0, 255);
+    push();
+    if (unlockTimer > 150) {
+      translate(random(-3, 3), random(-3, 3));
+    }
+    fill(50, 255, 100, alpha);
+    textSize(36);
+    text(unlockMessage, width / 2, height / 2 - 100);
+    pop();
   }
   textStyle(NORMAL);
 
@@ -1139,11 +1171,11 @@ function drawTitle(){
   // Title
   textAlign(CENTER,CENTER);
   fill(80,220,160); textSize(52);
-  text('BUNGEE SLIMES',cx,cy-80);
+  text('Tethered',cx,cy-80);
   fill(100,160,255); textSize(18);
-  text('Co-op Arena',cx,cy-42);
+  text('MCST CIS Game Jam 2026',cx,cy-42);
   // Controls table
-  fill(180); textSize(13);
+  fill(180); textSize(16);
   text('Player 1: WASD  •  Player 2: IJKL',cx,cy+10);
   text('Speed Boost: E + O  •  Anchor Spin: SPACE',cx,cy+32);
   text('Gravity Vortex: R + P  •  Shield Pulse: SHIFT',cx,cy+54);
